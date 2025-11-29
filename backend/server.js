@@ -18,6 +18,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+
 // ---------- DB CONNECT ----------
 mongoose
   .connect(process.env.MONGO_URI, {
