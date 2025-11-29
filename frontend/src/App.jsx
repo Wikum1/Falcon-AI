@@ -3,7 +3,7 @@ import "./App.css";
 
 // 🔗 Backend base URL (Replit in production, localhost for dev)
 const API_BASE =
-  import.meta.env.VITE_API_BASE || "https://falcon-ai--wikumsurindu542.replit.app";
+  import.meta.env.VITE_API_BASE || "https://replit.com/@wikumsurindu542/Falcon-AI?deploymentPane=true";
 
 
 // Helper to create a fresh empty chat
