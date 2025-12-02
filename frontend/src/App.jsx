@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-// 🔗 Backend base URL (Replit in production, localhost for dev)
+// 🔗 Backend base URL (local by default, overridable in Vercel)
 const API_BASE =
-  import.meta.env.VITE_API_BASE || "https://falcon-ai--wikumsurindu542.replit.app";
+  import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 
 // Helper to create a fresh empty chat

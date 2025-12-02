@@ -1,6 +1,6 @@
 // server.js
 import express from "express";
-import cors from "cors";
+import cors from "cors";          // still imported (used for safety if you want later)
 import dotenv from "dotenv";
 import Groq from "groq-sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -15,15 +15,62 @@ import User from "./models/User.js";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+/* ------------------------
+   CORS CONFIG
+   ------------------------ */
+
+// Origins we explicitly know about
+const allowedOrigins = [
+  "https://falconai1.netlify.app",                      // main Netlify site
+  "http://localhost:5173",                             // Vite default
+  "http://localhost:5174",                             // your current Vite port
+  "https://falcon-ai--wikumsurindu542.replit.app",     // Replit URL
+];
+
+// Custom CORS middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin) {
+    const isExplicitAllowed = allowedOrigins.includes(origin);
+    const isLocalhost = origin.startsWith("http://localhost");
+    const isNetlify = origin.endsWith(".netlify.app");
+
+    if (isExplicitAllowed || isLocalhost || isNetlify) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+      );
+      res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+      );
+    }
+  }
+
+  // Handle preflight quickly
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+// Body parser
 app.use(express.json());
 
+/* ------------------------
+   HEALTH CHECK
+   ------------------------ */
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
 
-
-// ---------- DB CONNECT ----------
+/* ------------------------
+   DB CONNECT
+   ------------------------ */
 mongoose
   .connect(process.env.MONGO_URI, {
     dbName: "wikum_ai",
@@ -31,7 +78,9 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("MongoDB error:", err.message));
 
-// ---------- AI CLIENTS ----------
+/* ------------------------
+   AI CLIENTS
+   ------------------------ */
 
 // Groq
 const groqClient = new Groq({
@@ -49,7 +98,9 @@ const deepseekClient = new OpenAI({
 
 // HuggingFace uses plain fetch + HF_API_KEY
 
-// ---------- AUTH MIDDLEWARE ----------
+/* ------------------------
+   AUTH MIDDLEWARE
+   ------------------------ */
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ")
@@ -69,7 +120,9 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// ---------- AUTH ROUTES ----------
+/* ------------------------
+   AUTH ROUTES
+   ------------------------ */
 
 // Register
 app.post("/api/auth/register", async (req, res) => {
@@ -144,7 +197,9 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// ---------- WEATHER TOOL ROUTE (NEW) ----------
+/* ------------------------
+   WEATHER TOOL ROUTE
+   ------------------------ */
 app.post("/api/tools/weather", async (req, res) => {
   try {
     const { city } = req.body;
@@ -189,7 +244,9 @@ app.post("/api/tools/weather", async (req, res) => {
   }
 });
 
-// ---------- CHAT ROUTE (protected) ----------
+/* ------------------------
+   CHAT ROUTE (protected)
+   ------------------------ */
 app.post("/api/chat", authMiddleware, async (req, res) => {
   try {
     const { message, messages, provider = "groq" } = req.body;
@@ -273,7 +330,9 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
   }
 });
 
-// 🔹 IMAGE GENERATION ROUTE (HuggingFace Stable Diffusion)
+/* ------------------------
+   IMAGE GENERATION
+   ------------------------ */
 app.post("/api/image/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -282,7 +341,7 @@ app.post("/api/image/generate", async (req, res) => {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    // Call HuggingFace image model (you can change model name later)
+    // Call HuggingFace image model
     const hfRes = await fetch(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
       {
@@ -314,6 +373,8 @@ app.post("/api/image/generate", async (req, res) => {
   }
 });
 
-// ---------- Start server ----------
+/* ------------------------
+   START SERVER
+   ------------------------ */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
